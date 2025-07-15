@@ -1,19 +1,19 @@
 package org.mozilla.gecko.gfx;
 
-import org.libreoffice.LibreOfficeMainActivity;
+import android.content.Context;
 import android.graphics.PointF;
 import android.graphics.RectF;
 import android.util.DisplayMetrics;
-import org.libreoffice.LOKitShell;
+
+import org.libreoffice.callback.EventCallback;
+import org.libreoffice.data.LOEvent;
 import org.mozilla.gecko.ZoomConstraints;
 import java.util.List;
 
 public class GeckoLayerClient implements PanZoomTarget {
-    private static final String LOGTAG = GeckoLayerClient.class.getSimpleName();
-
     private LayerRenderer mLayerRenderer;
 
-    private final LibreOfficeMainActivity mContext;
+    private final Context mContext;
     private IntSize mScreenSize;
     private DisplayPortMetrics mDisplayPort;
 
@@ -40,14 +40,16 @@ public class GeckoLayerClient implements PanZoomTarget {
 
     private boolean mIsReady;
 
-    private PanZoomController mPanZoomController;
+    private JavaPanZoomController mPanZoomController;
     private LayerView mView;
     private final DisplayPortCalculator mDisplayPortCalculator;
+    private final EventCallback mCallback;
 
-    public GeckoLayerClient(LibreOfficeMainActivity context) {
+    public GeckoLayerClient(Context context, EventCallback callback) {
         // we can fill these in with dummy values because they are always written
         // to before being read
         mContext = context;
+        mCallback = callback;
         mScreenSize = new IntSize(0, 0);
         mDisplayPort = new DisplayPortMetrics();
         mDisplayPortCalculator = new DisplayPortCalculator(mContext);
@@ -57,17 +59,17 @@ public class GeckoLayerClient implements PanZoomTarget {
         mViewportMetrics = new ImmutableViewportMetrics(displayMetrics);
     }
 
-    public void setView(LayerView view) {
+    public void setView(LayerView view, JavaPanZoomController panZoomController) {
         mView = view;
-        mPanZoomController = PanZoomController.Factory.create(mContext, this, view);
-        mView.connect(this);
+        mPanZoomController = panZoomController;
+        mView.connect(this, mCallback);
     }
 
     public void notifyReady() {
         mIsReady = true;
 
-        mRootLayer = new DynamicTileLayer(mContext);
-        mLowResLayer = new FixedZoomTileLayer(mContext);
+        mRootLayer = new DynamicTileLayer(mContext, mCallback);
+        mLowResLayer = new FixedZoomTileLayer(mContext, mCallback);
 
         mLayerRenderer = new LayerRenderer(mView);
 
@@ -122,7 +124,7 @@ public class GeckoLayerClient implements PanZoomTarget {
         sendResizeEventIfNecessary(forceResizeEvent);
     }
 
-    PanZoomController getPanZoomController() {
+    JavaPanZoomController getPanZoomController() {
         return mPanZoomController;
     }
 
@@ -132,14 +134,11 @@ public class GeckoLayerClient implements PanZoomTarget {
     private void sendResizeEventIfNecessary(boolean force) {
         DisplayMetrics metrics = mContext.getResources().getDisplayMetrics();
         IntSize newScreenSize = new IntSize(metrics.widthPixels, metrics.heightPixels);
-
         if (!force && mScreenSize.equals(newScreenSize)) {
             return;
         }
-
         mScreenSize = newScreenSize;
-
-        LOKitShell.sendSizeChangedEvent(mScreenSize.width, mScreenSize.height);
+        if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.SIZE_CHANGED));
     }
 
     /**
@@ -177,19 +176,6 @@ public class GeckoLayerClient implements PanZoomTarget {
         mDisplayPort = displayPort;
 
         reevaluateTiles();
-    }
-
-    /**
-     * Aborts any pan/zoom animation that is currently in progress.
-     */
-    public void abortPanZoomAnimation() {
-        if (mPanZoomController != null) {
-            mView.post(new Runnable() {
-                public void run() {
-                    mPanZoomController.abortAnimation();
-                }
-            });
-        }
     }
 
     public void setZoomConstraints(ZoomConstraints constraints) {
@@ -309,18 +295,14 @@ public class GeckoLayerClient implements PanZoomTarget {
     }
 
     public void zoomTo(RectF rect) {
-        if (mPanZoomController instanceof JavaPanZoomController) {
-            ((JavaPanZoomController) mPanZoomController).animatedZoomTo(rect);
-        }
+        mPanZoomController.animatedZoomTo(rect);
     }
 
     /**
      * Move the viewport to the desired point, and change the zoom level.
      */
     public void moveTo(PointF point, Float zoom) {
-        if (mPanZoomController instanceof JavaPanZoomController) {
-            ((JavaPanZoomController) mPanZoomController).animatedMove(point, zoom);
-        }
+         mPanZoomController.animatedMove(point, zoom);
     }
 
     public void zoomTo(float pageWidth, float pageHeight) {

@@ -5,9 +5,9 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.RectF;
-
-import org.libreoffice.LOKitShell;
-import org.libreoffice.LibreOfficeMainActivity;
+import org.libreoffice.callback.EventCallback;
+import org.libreoffice.data.LOEvent;
+import org.mozilla.gecko.gfx.GeckoLayerClient;
 import org.mozilla.gecko.gfx.ImmutableViewportMetrics;
 
 /**
@@ -21,14 +21,16 @@ public class CalcSelectionBox extends CommonCanvasElement {
 
     public RectF mDocumentPosition;
 
-    private final LibreOfficeMainActivity mContext;
+    private final GeckoLayerClient mLayerClient;
     private RectF mScreenPosition;
     private long mLastTime = 0;
     private final Paint mPaint;
     private final Paint mCirclePaint;
+    private final EventCallback mCallback;
 
-    public CalcSelectionBox(LibreOfficeMainActivity context) {
-        mContext = context;
+    public CalcSelectionBox(GeckoLayerClient layerClient, EventCallback callback) {
+        mLayerClient = layerClient;
+        mCallback = callback;
         mScreenPosition = new RectF();
         mDocumentPosition = new RectF();
         mPaint = new Paint();
@@ -65,16 +67,16 @@ public class CalcSelectionBox extends CommonCanvasElement {
      * Signal to move the handle to a new position to LO.
      */
     private void signalHandleMove(float newX, float newY) {
-        ImmutableViewportMetrics viewportMetrics = mContext.getLayerClient().getViewportMetrics();
+        ImmutableViewportMetrics viewportMetrics = mLayerClient.getViewportMetrics();
         float zoom = viewportMetrics.zoomFactor;
         PointF origin = viewportMetrics.getOrigin();
 
         PointF documentPoint = new PointF((newX+origin.x)/zoom , (newY+origin.y)/zoom);
 
         if (documentPoint.x < mDocumentPosition.left || documentPoint.y < mDocumentPosition.top) {
-            LOKitShell.sendChangeHandlePositionEvent(SelectionHandle.HandleType.START, documentPoint);
+            if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.CHANGE_HANDLE_POSITION, SelectionHandle.HandleType.START, documentPoint));
         } else if (documentPoint.x > mDocumentPosition.right || documentPoint.y > mDocumentPosition.bottom){
-            LOKitShell.sendChangeHandlePositionEvent(SelectionHandle.HandleType.END, documentPoint);
+            if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.CHANGE_HANDLE_POSITION, SelectionHandle.HandleType.END, documentPoint));
         }
     }
 

@@ -1,15 +1,18 @@
 package org.libreoffice.canvas;
 
-import org.libreoffice.LibreOfficeMainActivity;
+import org.libreoffice.application.TheApplication;
+import org.libreoffice.callback.EventCallback;
+import org.libreoffice.ui.MainActivity;
 
 import org.libreoffice.R;
+import org.mozilla.gecko.gfx.GeckoLayerClient;
 
 /**
  * Selection handle that is used to manipulate the cursor.
  */
 public class SelectionHandleMiddle extends SelectionHandle {
-    public SelectionHandleMiddle(LibreOfficeMainActivity context) {
-        super(context, getBitmapForDrawable(context, R.drawable.handle_alias_middle));
+    public SelectionHandleMiddle(GeckoLayerClient layerClient, EventCallback callback) {
+        super(layerClient, callback, getBitmapForDrawable(TheApplication.getContext(), R.drawable.handle_alias_middle));
     }
 
     /**

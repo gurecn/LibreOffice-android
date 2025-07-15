@@ -3,14 +3,14 @@ package org.libreoffice.overlay;
 import android.graphics.RectF;
 import android.util.Log;
 
-import org.libreoffice.LOKitShell;
-import org.libreoffice.LibreOfficeMainActivity;
+import org.libreoffice.application.TheApplication;
+import org.libreoffice.callback.EventCallback;
+import org.libreoffice.ui.MainActivity;
 import org.libreoffice.R;
 import org.libreoffice.canvas.SelectionHandle;
 import org.mozilla.gecko.gfx.Layer;
 import org.mozilla.gecko.gfx.LayerView;
 import org.mozilla.gecko.util.FloatUtils;
-
 import java.util.List;
 
 /**
@@ -50,7 +50,7 @@ public class DocumentOverlay {
             mViewTop = context.viewport.top;
             mViewZoom = context.zoomFactor;
 
-            LOKitShell.getMainHandler().post(new Runnable() {
+            TheApplication.getMainHandler().post(new Runnable() {
                 public void run() {
                     mDocumentOverlayView.repositionWithViewport(mViewLeft, mViewTop, mViewZoom);
                 }
@@ -58,14 +58,14 @@ public class DocumentOverlay {
         }
     }
 
-    public DocumentOverlay(LibreOfficeMainActivity context, LayerView layerView) {
+    public DocumentOverlay(MainActivity context, LayerView layerView, EventCallback callback) {
         mDocumentOverlayView = context.findViewById(R.id.text_cursor_view);
         mDocumentOverlayLayer = new DocumentOverlayLayer();
         if (mDocumentOverlayView == null) {
             Log.e(LOGTAG, "Failed to initialize TextCursorLayer - CursorView is null");
         }
         layerView.addLayer(mDocumentOverlayLayer);
-        mDocumentOverlayView.initialize(layerView);
+        mDocumentOverlayView.initialize(layerView, callback);
     }
 
     public void setPartPageRectangles(List<RectF> rectangles) {
@@ -76,7 +76,7 @@ public class DocumentOverlay {
      * Show the cursor at the defined cursor position on the overlay.
      */
     public void showCursor() {
-        LOKitShell.getMainHandler().post(new Runnable() {
+        TheApplication.getMainHandler().post(new Runnable() {
             public void run() {
                 mDocumentOverlayView.showCursor();
             }
@@ -87,7 +87,7 @@ public class DocumentOverlay {
      * Hide the cursor at the defined cursor position on the overlay.
      */
     public void hideCursor() {
-        LOKitShell.getMainHandler().post(new Runnable() {
+        TheApplication.getMainHandler().post(new Runnable() {
             public void run() {
                 mDocumentOverlayView.hideCursor();
             }
@@ -98,7 +98,7 @@ public class DocumentOverlay {
      * Show the page number rectangle on the overlay.
      */
     public void showPageNumberRect() {
-        LOKitShell.getMainHandler().post(new Runnable() {
+        TheApplication.getMainHandler().post(new Runnable() {
             public void run() {
                 mDocumentOverlayView.showPageNumberRect();
             }
@@ -109,7 +109,7 @@ public class DocumentOverlay {
      * Hide the page number rectangle on the overlay.
      */
     public void hidePageNumberRect() {
-        LOKitShell.getMainHandler().postDelayed(new Runnable() {
+        TheApplication.getMainHandler().postDelayed(new Runnable() {
             public void run() {
                 mDocumentOverlayView.hidePageNumberRect();
             }
@@ -120,7 +120,7 @@ public class DocumentOverlay {
      * Position the cursor to the input position on the overlay.
      */
     public void positionCursor(final RectF position) {
-        LOKitShell.getMainHandler().post(new Runnable() {
+        TheApplication.getMainHandler().post(new Runnable() {
             public void run() {
                 mDocumentOverlayView.changeCursorPosition(position);
             }
@@ -131,7 +131,7 @@ public class DocumentOverlay {
      * Show selections on the overlay.
      */
     public void showSelections() {
-        LOKitShell.getMainHandler().post(new Runnable() {
+        TheApplication.getMainHandler().post(new Runnable() {
             public void run() {
                 mDocumentOverlayView.showSelections();
             }
@@ -142,7 +142,7 @@ public class DocumentOverlay {
      * Hide selections on the overlay.
      */
     public void hideSelections() {
-        LOKitShell.getMainHandler().post(new Runnable() {
+        TheApplication.getMainHandler().post(new Runnable() {
             public void run() {
                 mDocumentOverlayView.hideSelections();
             }
@@ -153,7 +153,7 @@ public class DocumentOverlay {
      * Change the list of selections.
      */
     public void changeSelections(final List<RectF> selections) {
-        LOKitShell.getMainHandler().post(new Runnable() {
+        TheApplication.getMainHandler().post(new Runnable() {
             public void run() {
                 mDocumentOverlayView.changeSelections(selections);
             }
@@ -164,7 +164,7 @@ public class DocumentOverlay {
      * Show the graphic selection on the overlay.
      */
     public void showGraphicSelection() {
-        LOKitShell.getMainHandler().post(new Runnable() {
+        TheApplication.getMainHandler().post(new Runnable() {
             public void run() {
                 mDocumentOverlayView.showGraphicSelection();
             }
@@ -175,7 +175,7 @@ public class DocumentOverlay {
      * Hide the graphic selection.
      */
     public void hideGraphicSelection() {
-        LOKitShell.getMainHandler().post(new Runnable() {
+        TheApplication.getMainHandler().post(new Runnable() {
             public void run() {
                 mDocumentOverlayView.hideGraphicSelection();
             }
@@ -186,7 +186,7 @@ public class DocumentOverlay {
      * Change the graphic selection rectangle to the input rectangle.
      */
     public void changeGraphicSelection(final RectF rectangle) {
-        LOKitShell.getMainHandler().post(new Runnable() {
+        TheApplication.getMainHandler().post(new Runnable() {
             public void run() {
                 mDocumentOverlayView.changeGraphicSelection(rectangle);
             }
@@ -197,7 +197,7 @@ public class DocumentOverlay {
      * Show the handle (of input type) on the overlay.
      */
     public void showHandle(final SelectionHandle.HandleType type) {
-        LOKitShell.getMainHandler().post(new Runnable() {
+        TheApplication.getMainHandler().post(new Runnable() {
             public void run() {
                 mDocumentOverlayView.showHandle(type);
             }
@@ -208,7 +208,7 @@ public class DocumentOverlay {
      * Hide the handle (of input type).
      */
     public void hideHandle(final SelectionHandle.HandleType type) {
-        LOKitShell.getMainHandler().post(new Runnable() {
+        TheApplication.getMainHandler().post(new Runnable() {
             public void run() {
                 mDocumentOverlayView.hideHandle(type);
             }
@@ -219,7 +219,7 @@ public class DocumentOverlay {
      * Position the handle (of input type) position to the input rectangle.
      */
     public void positionHandle(final SelectionHandle.HandleType type, final RectF rectangle) {
-        LOKitShell.getMainHandler().post(new Runnable() {
+        TheApplication.getMainHandler().post(new Runnable() {
             public void run() {
                 mDocumentOverlayView.positionHandle(type, rectangle);
             }
@@ -235,7 +235,7 @@ public class DocumentOverlay {
     }
 
     public void showCellSelection(final RectF cellCursorRect) {
-        LOKitShell.getMainHandler().post(new Runnable() {
+        TheApplication.getMainHandler().post(new Runnable() {
             public void run() {
                 mDocumentOverlayView.showCellSelection(cellCursorRect);
             }
@@ -243,7 +243,7 @@ public class DocumentOverlay {
     }
 
     public void showHeaderSelection(final RectF cellCursorRect) {
-        LOKitShell.getMainHandler().post(new Runnable() {
+        TheApplication.getMainHandler().post(new Runnable() {
             public void run() {
                 mDocumentOverlayView.showHeaderSelection(cellCursorRect);
             }
@@ -251,7 +251,7 @@ public class DocumentOverlay {
     }
 
     public void showAdjustLengthLine(final boolean isRow, final CalcHeadersView view) {
-        LOKitShell.getMainHandler().post(new Runnable() {
+        TheApplication.getMainHandler().post(new Runnable() {
             @Override
             public void run() {
                 mDocumentOverlayView.showAdjustLengthLine(isRow, view);

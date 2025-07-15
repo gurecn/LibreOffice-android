@@ -3,9 +3,11 @@ package org.mozilla.gecko.gfx;
 import android.content.Context;
 import android.graphics.RectF;
 
+import org.libreoffice.callback.EventCallback;
+
 public class DynamicTileLayer extends ComposedTileLayer {
-    public DynamicTileLayer(Context context) {
-        super(context);
+    public DynamicTileLayer(Context context, EventCallback callback) {
+        super(context, callback);
     }
 
     @Override

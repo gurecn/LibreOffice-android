@@ -10,7 +10,8 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
-import org.libreoffice.LibreOfficeMainActivity;
+import org.libreoffice.callback.EventCallback;
+import org.libreoffice.ui.MainActivity;
 import org.libreoffice.R;
 import org.libreoffice.canvas.AdjustLengthLine;
 import org.libreoffice.canvas.CalcSelectionBox;
@@ -68,6 +69,7 @@ public class DocumentOverlayView extends View implements View.OnTouchListener {
     private boolean mCalcSelectionBoxDragging;
     private AdjustLengthLine mAdjustLengthLine;
     private boolean mAdjustLengthLineDragging;
+    private EventCallback mCallback;
 
     public DocumentOverlayView(Context context) {
         super(context);
@@ -84,10 +86,11 @@ public class DocumentOverlayView extends View implements View.OnTouchListener {
     /**
      * Initialize the selection and cursor view.
      */
-    public void initialize(LayerView layerView) {
+    public void initialize(LayerView layerView, EventCallback callback) {
         if (!mInitialized) {
             setOnTouchListener(this);
             mLayerView = layerView;
+            mCallback = callback;
 
             mCursor = new Cursor();
             mCursor.setVisible(false);
@@ -96,14 +99,14 @@ public class DocumentOverlayView extends View implements View.OnTouchListener {
             mSelectionPaint.setAlpha(50);
             mSelectionsVisible = false;
 
-            mGraphicSelection = new GraphicSelection((LibreOfficeMainActivity) getContext());
+            mGraphicSelection = new GraphicSelection(mLayerView.getLayerClient(), mCallback);
             mGraphicSelection.setVisible(false);
 
             postDelayed(cursorAnimation, CURSOR_BLINK_TIME);
 
-            mHandleMiddle = new SelectionHandleMiddle((LibreOfficeMainActivity) getContext());
-            mHandleStart = new SelectionHandleStart((LibreOfficeMainActivity) getContext());
-            mHandleEnd = new SelectionHandleEnd((LibreOfficeMainActivity) getContext());
+            mHandleMiddle = new SelectionHandleMiddle(mLayerView.getLayerClient(), mCallback);
+            mHandleStart = new SelectionHandleStart(mLayerView.getLayerClient(), mCallback);
+            mHandleEnd = new SelectionHandleEnd(mLayerView.getLayerClient(), mCallback);
 
             mInitialized = true;
         }
@@ -396,8 +399,7 @@ public class DocumentOverlayView extends View implements View.OnTouchListener {
                         mCalcSelectionBox.dragStart(point);
                         mCalcSelectionBoxDragging = true;
                         return true;
-                    } else if (mAdjustLengthLine != null &&
-                            mAdjustLengthLine.contains(point.x, point.y)) {
+                    } else if (mAdjustLengthLine != null && mAdjustLengthLine.contains(point.x, point.y)) {
                         mAdjustLengthLine.dragStart(point);
                         mAdjustLengthLineDragging = true;
                         return true;
@@ -502,7 +504,7 @@ public class DocumentOverlayView extends View implements View.OnTouchListener {
 
     public void setCalcHeadersController(CalcHeadersController calcHeadersController) {
         mCalcHeadersController = calcHeadersController;
-        mCalcSelectionBox = new CalcSelectionBox((LibreOfficeMainActivity) getContext());
+        mCalcSelectionBox = new CalcSelectionBox(mLayerView.getLayerClient(), mCallback);
     }
 
     public void showCellSelection(RectF cellCursorRect) {
@@ -532,7 +534,7 @@ public class DocumentOverlayView extends View implements View.OnTouchListener {
     }
 
     public void showAdjustLengthLine(boolean isRow, final CalcHeadersView view) {
-        mAdjustLengthLine = new AdjustLengthLine((LibreOfficeMainActivity) getContext(), view, isRow, getWidth(), getHeight());
+        mAdjustLengthLine = new AdjustLengthLine(mLayerView.getLayerClient(), mCallback, view, isRow, getWidth(), getHeight());
         ImmutableViewportMetrics metrics = mLayerView.getViewportMetrics();
         RectF position = convertToScreen(mCalcSelectionBox.mDocumentPosition, metrics.viewportRectLeft, metrics.viewportRectTop, metrics.zoomFactor);
         mAdjustLengthLine.setScreenRect(position);

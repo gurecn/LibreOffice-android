@@ -6,7 +6,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.PixelFormat;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -16,10 +15,9 @@ import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.widget.FrameLayout;
-import org.libreoffice.LOEvent;
-import org.libreoffice.LOKitShell;
-import org.libreoffice.LibreOfficeMainActivity;
-import org.libreoffice.R;
+
+import org.libreoffice.callback.EventCallback;
+import org.libreoffice.data.LOEvent;
 import org.mozilla.gecko.OnInterceptTouchListener;
 import org.mozilla.gecko.OnSlideSwipeListener;
 
@@ -30,10 +28,10 @@ import org.mozilla.gecko.OnSlideSwipeListener;
  * mediator between the LayerRenderer and the LayerController.
  */
 public class LayerView extends FrameLayout {
-    private static final String LOGTAG = LayerView.class.getName();
 
     private GeckoLayerClient mLayerClient;
-    private PanZoomController mPanZoomController;
+    private EventCallback mCallback;
+    private JavaPanZoomController mPanZoomController;
     private final GLController mGLController;
     private InputConnectionHandler mInputConnectionHandler;
     private LayerRenderer mRenderer;
@@ -42,11 +40,9 @@ public class LayerView extends FrameLayout {
 
     private Listener mListener;
     private OnInterceptTouchListener mTouchIntercepter;
-    private final LibreOfficeMainActivity mContext;
 
     public LayerView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        mContext = (LibreOfficeMainActivity) context;
 
         mSurfaceView = new SurfaceView(context);
         addView(mSurfaceView, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
@@ -58,8 +54,9 @@ public class LayerView extends FrameLayout {
         mGLController = new GLController(this);
     }
 
-    void connect(GeckoLayerClient layerClient) {
+    void connect(GeckoLayerClient layerClient, EventCallback callback) {
         mLayerClient = layerClient;
+        mCallback = callback;
         mPanZoomController = mLayerClient.getPanZoomController();
         mRenderer = new LayerRenderer(this);
         mInputConnectionHandler = null;
@@ -68,7 +65,7 @@ public class LayerView extends FrameLayout {
         setFocusableInTouchMode(true);
 
         createGLThread();
-        setOnTouchListener(new OnSlideSwipeListener(getContext(), mLayerClient));
+        setOnTouchListener(new OnSlideSwipeListener(getContext(), mLayerClient, callback));
     }
 
     public void show() {
@@ -130,7 +127,7 @@ public class LayerView extends FrameLayout {
     }
 
     public GeckoLayerClient getLayerClient() { return mLayerClient; }
-    public PanZoomController getPanZoomController() { return mPanZoomController; }
+    public JavaPanZoomController getPanZoomController() { return mPanZoomController; }
 
     public ImmutableViewportMetrics getViewportMetrics() {
         return mLayerClient.getViewportMetrics();
@@ -150,7 +147,7 @@ public class LayerView extends FrameLayout {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        return mInputConnectionHandler != null && mInputConnectionHandler.onKeyDown(keyCode, event);
+        return mInputConnectionHandler != null && mInputConnectionHandler.onKeyDown(mCallback, keyCode, event);
     }
 
     @Override
@@ -160,12 +157,12 @@ public class LayerView extends FrameLayout {
 
     @Override
     public boolean onKeyMultiple(int keyCode, int repeatCount, KeyEvent event) {
-        return mInputConnectionHandler != null && mInputConnectionHandler.onKeyMultiple(keyCode, repeatCount, event);
+        return mInputConnectionHandler != null && mInputConnectionHandler.onKeyMultiple(mCallback, keyCode, repeatCount, event);
     }
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
-        return mInputConnectionHandler != null && mInputConnectionHandler.onKeyUp(keyCode, event);
+        return mInputConnectionHandler != null && mInputConnectionHandler.onKeyUp(mCallback, keyCode, event);
     }
 
     public void requestRender() {
@@ -236,8 +233,7 @@ public class LayerView extends FrameLayout {
         if (mListener != null) {
             mListener.surfaceChanged(width, height);
         }
-
-        LOKitShell.sendEvent(new LOEvent(LOEvent.UPDATE_ZOOM_CONSTRAINTS));
+        if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.UPDATE_ZOOM_CONSTRAINTS));
     }
 
     private void onDestroyed() {
@@ -290,8 +286,6 @@ public class LayerView extends FrameLayout {
         if (mRenderControllerThread != null) {
             throw new LayerViewException ("createGLThread() called with a GL thread already in place!");
         }
-
-        Log.e(LOGTAG, "### Creating GL thread!");
         mRenderControllerThread = new RenderControllerThread(mGLController);
         mRenderControllerThread.start();
         setListener(mRenderControllerThread);
@@ -300,7 +294,6 @@ public class LayerView extends FrameLayout {
 
     public synchronized Thread destroyGLThread() {
         // Wait for the GL thread to be started.
-        Log.e(LOGTAG, "### Waiting for GL thread to be created...");
         while (mRenderControllerThread == null) {
             try {
                 wait();
@@ -308,8 +301,6 @@ public class LayerView extends FrameLayout {
                 throw new RuntimeException(e);
             }
         }
-
-        Log.e(LOGTAG, "### Destroying GL thread!");
         Thread thread = mRenderControllerThread;
         mRenderControllerThread.shutdown();
         setListener(null);

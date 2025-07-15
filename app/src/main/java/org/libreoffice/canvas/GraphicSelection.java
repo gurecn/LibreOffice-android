@@ -5,11 +5,10 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.RectF;
-
-import org.libreoffice.LOKitShell;
-import org.libreoffice.LibreOfficeMainActivity;
+import org.libreoffice.callback.EventCallback;
+import org.libreoffice.data.LOEvent;
+import org.mozilla.gecko.gfx.GeckoLayerClient;
 import org.mozilla.gecko.gfx.LayerView;
-
 import static org.libreoffice.canvas.GraphicSelectionHandle.HandlePosition;
 
 /**
@@ -28,13 +27,15 @@ public class GraphicSelection extends CommonCanvasElement {
     private final GraphicSelectionHandle[] mHandles = new GraphicSelectionHandle[8];
     private GraphicSelectionHandle mDragHandle = null;
     private boolean mTriggerSinglePress = false;
-    private final LibreOfficeMainActivity mContext;
+    private final GeckoLayerClient mLayerClient;
+    private final EventCallback mCallback;
 
     /**
      * Construct the graphic selection.
      */
-    public GraphicSelection(LibreOfficeMainActivity context) {
-        mContext = context;
+    public GraphicSelection(GeckoLayerClient layerClient, EventCallback callback) {
+        mLayerClient = layerClient;
+        mCallback = callback;
         // Create the paint, which is needed at drawing
         mPaintStroke = new Paint();
         mPaintStroke.setStyle(Paint.Style.STROKE);
@@ -238,12 +239,12 @@ public class GraphicSelection extends CommonCanvasElement {
      */
     private void sendGraphicSelection(String type, PointF screenPosition)
     {
-        LayerView layerView = mContext.getLayerClient().getView();
+        LayerView layerView = mLayerClient.getView();
         if (layerView != null) {
             // Position is in screen coordinates. We need to convert them to
             // document coordinates.
-            PointF documentPoint = layerView.getLayerClient().convertViewPointToLayerPoint(screenPosition);
-            LOKitShell.sendTouchEvent(type, documentPoint);
+            PointF documentPoint = mLayerClient.convertViewPointToLayerPoint(screenPosition);
+            if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.TOUCH, type, documentPoint));
         }
     }
 

@@ -1,15 +1,18 @@
 package org.libreoffice.canvas;
 
-import org.libreoffice.LibreOfficeMainActivity;
+import org.libreoffice.application.TheApplication;
+import org.libreoffice.callback.EventCallback;
+import org.libreoffice.ui.MainActivity;
 
 import org.libreoffice.R;
+import org.mozilla.gecko.gfx.GeckoLayerClient;
 
 /**
  * Selection handle for showing and manipulating the start of a selection.
  */
 public class SelectionHandleStart extends SelectionHandle {
-    public SelectionHandleStart(LibreOfficeMainActivity context) {
-        super(context, getBitmapForDrawable(context, R.drawable.handle_alias_start));
+    public SelectionHandleStart(GeckoLayerClient layerClient, EventCallback callback) {
+        super(layerClient, callback, getBitmapForDrawable(TheApplication.getContext(), R.drawable.handle_alias_start));
     }
 
     /**

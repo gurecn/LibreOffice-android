@@ -7,10 +7,10 @@ import android.graphics.RectF;
 import android.graphics.Region;
 import android.util.Log;
 
-import org.libreoffice.LOKitShell;
-import org.libreoffice.TileIdentifier;
+import org.libreoffice.callback.EventCallback;
+import org.libreoffice.data.LOEvent;
+import org.libreoffice.data.TileIdentifier;
 import org.mozilla.gecko.util.FloatUtils;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -33,8 +33,10 @@ public abstract class ComposedTileLayer extends Layer implements ComponentCallba
     protected RectF currentPageRect = new RectF();
 
     private long reevaluationNanoTime = 0;
+    private final EventCallback mCallback;
 
-    public ComposedTileLayer(Context context) {
+    public ComposedTileLayer(Context context, EventCallback callback) {
+        mCallback = callback;
         context.registerComponentCallbacks(this);
         this.tileSize = new IntSize(256, 256);
     }
@@ -166,8 +168,7 @@ public abstract class ComposedTileLayer extends Layer implements ComponentCallba
         currentViewport = newViewPort;
         currentZoom = newZoom;
         currentPageRect = viewportMetrics.getPageRect();
-
-        LOKitShell.sendTileReevaluationRequest(this);
+        if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.TILE_REEVALUATION_REQUEST, this));
     }
 
     protected abstract RectF getViewPort(ImmutableViewportMetrics viewportMetrics);

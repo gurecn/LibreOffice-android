@@ -3,9 +3,11 @@ package org.mozilla.gecko.gfx;
 import android.content.Context;
 import android.graphics.RectF;
 
+import org.libreoffice.callback.EventCallback;
+
 public class FixedZoomTileLayer extends ComposedTileLayer {
-    public FixedZoomTileLayer(Context context) {
-        super(context);
+    public FixedZoomTileLayer(Context context, EventCallback callback) {
+        super(context, callback);
     }
 
     @Override

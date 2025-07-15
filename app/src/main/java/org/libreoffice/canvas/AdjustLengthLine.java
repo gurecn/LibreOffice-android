@@ -5,25 +5,24 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.RectF;
-
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.libreoffice.LOEvent;
-import org.libreoffice.LOKitShell;
-import org.libreoffice.LibreOfficeMainActivity;
+import org.libreoffice.callback.EventCallback;
+import org.libreoffice.data.LOEvent;
 import org.libreoffice.overlay.CalcHeadersView;
+import org.libreoffice.utils.DeviceUtils;
+import org.mozilla.gecko.gfx.GeckoLayerClient;
 import org.mozilla.gecko.gfx.ImmutableViewportMetrics;
-
-import static org.libreoffice.SearchController.addProperty;
-import static org.libreoffice.UnitConverter.pixelToTwip;
-import static org.libreoffice.UnitConverter.twipsToHMM;
+import static org.libreoffice.manager.SearchController.addProperty;
+import static org.libreoffice.utils.UnitConverter.pixelToTwip;
+import static org.libreoffice.utils.UnitConverter.twipsToHMM;
 
 public class AdjustLengthLine extends CommonCanvasElement {
 
     private static final float STROKE_WIDTH = 4f;
     private static final float TOUCH_VICINITY_RADIUS = 24f;
 
-    private final LibreOfficeMainActivity mContext;
+    private final GeckoLayerClient mLayerClient;
     private final CalcHeadersView mCalcHeadersView;
     private final boolean mIsRow;
     private PointF mScreenPosition;
@@ -32,10 +31,12 @@ public class AdjustLengthLine extends CommonCanvasElement {
     private final Paint mPaint;
     private PointF mStartScreenPosition;
     private int mIndex;
+    private final EventCallback mCallback;
 
-    public AdjustLengthLine(LibreOfficeMainActivity context, CalcHeadersView view, boolean isRow, float width, float height) {
+    public AdjustLengthLine(GeckoLayerClient layerClient, EventCallback callback, CalcHeadersView view, boolean isRow, float width, float height) {
         super();
-        mContext = context;
+        mLayerClient = layerClient;
+        mCallback = callback;
         mCalcHeadersView = view;
         mIsRow = isRow;
         mWidth = width;
@@ -73,26 +74,24 @@ public class AdjustLengthLine extends CommonCanvasElement {
     }
 
     public void dragEnd(PointF point) {
-        ImmutableViewportMetrics viewportMetrics = mContext.getLayerClient().getViewportMetrics();
+        ImmutableViewportMetrics viewportMetrics = mLayerClient.getViewportMetrics();
         float zoom = viewportMetrics.zoomFactor;
 
-        PointF documentDistance = new PointF(pixelToTwip((point.x-mStartScreenPosition.x)/zoom, LOKitShell.getDpi(mContext)),
-                pixelToTwip((point.y-mStartScreenPosition.y)/zoom, LOKitShell.getDpi(mContext)));
+        PointF documentDistance = new PointF(pixelToTwip((point.x-mStartScreenPosition.x)/zoom, DeviceUtils.getDpi()),
+                pixelToTwip((point.y-mStartScreenPosition.y)/zoom, DeviceUtils.getDpi()));
 
         try {
             JSONObject rootJson = new JSONObject();
             if (mIsRow) {
                 addProperty(rootJson, "Row", "long", String.valueOf(mIndex));
                 addProperty(rootJson, "RowHeight", "unsigned short", String.valueOf(Math.round(documentDistance.y > 0 ? twipsToHMM(documentDistance.y) : 0)));
-                LOKitShell.sendEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:RowHeight", rootJson.toString()));
+                if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:RowHeight", rootJson.toString()));
             } else {
                 addProperty(rootJson, "Column", "long", String.valueOf(mIndex));
                 addProperty(rootJson, "ColumnWidth", "unsigned short", String.valueOf(documentDistance.x > 0 ? twipsToHMM(documentDistance.x) : 0));
-                LOKitShell.sendEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:ColumnWidth", rootJson.toString()));
+                if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:ColumnWidth", rootJson.toString()));
             }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+        } catch (JSONException ignored) {}
     }
 
     public void setScreenRect(RectF position) {

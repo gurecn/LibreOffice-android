@@ -2,9 +2,9 @@ package org.libreoffice.canvas;
 
 import android.graphics.Bitmap;
 import android.graphics.PointF;
-
-import org.libreoffice.LOKitShell;
-import org.libreoffice.LibreOfficeMainActivity;
+import org.libreoffice.callback.EventCallback;
+import org.libreoffice.data.LOEvent;
+import org.mozilla.gecko.gfx.GeckoLayerClient;
 import org.mozilla.gecko.gfx.ImmutableViewportMetrics;
 
 /**
@@ -18,11 +18,13 @@ public abstract class SelectionHandle extends BitmapHandle {
     private final PointF mDragDocumentPosition = new PointF();
     private long mLastTime = 0;
 
-    private final LibreOfficeMainActivity mContext;
+    private final GeckoLayerClient mLayerClient;
+    private final EventCallback mCallback;
 
-    public SelectionHandle(LibreOfficeMainActivity context, Bitmap bitmap) {
+    public SelectionHandle(GeckoLayerClient layerClient, EventCallback callback, Bitmap bitmap) {
         super(bitmap);
-        mContext = context;
+        mLayerClient = layerClient;
+        mCallback = callback;
     }
 
     /**
@@ -56,15 +58,14 @@ public abstract class SelectionHandle extends BitmapHandle {
      * Signal to move the handle to a new position to LO.
      */
     private void signalHandleMove(float newX, float newY) {
-        ImmutableViewportMetrics viewportMetrics = mContext.getLayerClient().getViewportMetrics();
+        ImmutableViewportMetrics viewportMetrics = mLayerClient.getViewportMetrics();
         float zoom = viewportMetrics.zoomFactor;
 
         float deltaX = (newX - mDragStartPoint.x) / zoom;
         float deltaY = (newY - mDragStartPoint.y) / zoom;
 
         PointF documentPoint = new PointF(mDragDocumentPosition.x + deltaX, mDragDocumentPosition.y + deltaY);
-
-        LOKitShell.sendChangeHandlePositionEvent(getHandleType(), documentPoint);
+        if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.CHANGE_HANDLE_POSITION, getHandleType(), documentPoint));
     }
 
     public abstract HandleType getHandleType();

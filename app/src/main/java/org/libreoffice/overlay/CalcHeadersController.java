@@ -20,41 +20,43 @@ import android.widget.TextView;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.libreoffice.LOEvent;
-import org.libreoffice.LOKitShell;
-import org.libreoffice.LibreOfficeMainActivity;
+import org.libreoffice.application.TheApplication;
+import org.libreoffice.callback.EventCallback;
+import org.libreoffice.data.LOEvent;
+import org.libreoffice.ui.MainActivity;
 import org.libreoffice.R;
 import org.mozilla.gecko.gfx.LayerView;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
-
-import static org.libreoffice.SearchController.addProperty;
+import static org.libreoffice.manager.SearchController.addProperty;
 
 public class CalcHeadersController {
     private static final String LOGTAG = CalcHeadersController.class.getSimpleName();
 
     private final CalcHeadersView mCalcRowHeadersView;
     private final CalcHeadersView mCalcColumnHeadersView;
+    private final DocumentOverlay mDocumentOverlay;
+    private final MainActivity mContext;
+    private final EventCallback mCallback;
 
-    private final LibreOfficeMainActivity mContext;
-
-    public CalcHeadersController(LibreOfficeMainActivity context, final LayerView layerView) {
+    public CalcHeadersController(MainActivity context, DocumentOverlay documentOverlay, final LayerView layerView, EventCallback callback) {
         mContext = context;
-        mContext.getDocumentOverlay().setCalcHeadersController(this);
+        mCallback = callback;
+        mDocumentOverlay = documentOverlay;
+        mDocumentOverlay.setCalcHeadersController(this);
         mCalcRowHeadersView = context.findViewById(R.id.calc_header_row);
         mCalcColumnHeadersView = context.findViewById(R.id.calc_header_column);
         if (mCalcColumnHeadersView == null || mCalcRowHeadersView == null) {
             Log.e(LOGTAG, "Failed to initialize Calc headers - View is null");
         } else {
-            mCalcRowHeadersView.initialize(layerView, true);
-            mCalcColumnHeadersView.initialize(layerView, false);
+            mCalcRowHeadersView.initialize(layerView, true, callback);
+            mCalcColumnHeadersView.initialize(layerView, false, callback);
         }
-        LOKitShell.sendEvent(new LOEvent(LOEvent.UPDATE_CALC_HEADERS));
+        if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.UPDATE_CALC_HEADERS));
         context.findViewById(R.id.calc_header_top_left).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                LOKitShell.sendEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:SelectAll"));
+                if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:SelectAll"));
                 if (mCalcColumnHeadersView == null) return;
                 mCalcColumnHeadersView.showHeaderPopup(new PointF());
             }
@@ -70,7 +72,7 @@ public class CalcHeadersController {
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
-                    LOKitShell.sendEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:GoToCell", rootJson.toString()));
+                    if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:GoToCell", rootJson.toString()));
                     mContext.hideSoftKeyboard();
                     layerView.requestFocus();
                 }
@@ -89,10 +91,10 @@ public class CalcHeadersController {
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
-                    LOKitShell.sendEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:EnterString", rootJson.toString()));
+                    if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:EnterString", rootJson.toString()));
                     mContext.hideSoftKeyboard();
                     layerView.requestFocus();
-                    LibreOfficeMainActivity.setDocumentChanged(true);
+                    if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.DOCUMENT_CHANGED));
                 }
                 return true;
             }
@@ -104,11 +106,11 @@ public class CalcHeadersController {
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        LOKitShell.sendEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:GoToCell", rootJson.toString()));
+        if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:GoToCell", rootJson.toString()));
     }
 
     public void setupHeaderPopupView() {
-        LayoutInflater inflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        LayoutInflater inflater = (LayoutInflater) TheApplication.getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         String[] rowOrColumn = {"Row","Column"};
         CalcHeadersView[] headersViews= {mCalcRowHeadersView, mCalcColumnHeadersView};
         for (int i = 0; i < rowOrColumn.length; i++) {
@@ -132,33 +134,33 @@ public class CalcHeadersController {
             headerPopupView.findViewById(R.id.calc_header_popup_insert).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    LOKitShell.sendEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:Insert"+tempName+"s"));
+                    if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:Insert"+tempName+"s"));
                     tempView.dismissPopupWindow();
-                    LibreOfficeMainActivity.setDocumentChanged(true);
+                    if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.DOCUMENT_CHANGED));
                 }
             });
             headerPopupView.findViewById(R.id.calc_header_popup_delete).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    LOKitShell.sendEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:Delete"+tempName+"s"));
+                    if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:Delete"+tempName+"s"));
                     tempView.dismissPopupWindow();
-                    LibreOfficeMainActivity.setDocumentChanged(true);
+                    if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.DOCUMENT_CHANGED));
                 }
             });
             headerPopupView.findViewById(R.id.calc_header_popup_hide).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    LOKitShell.sendEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:Hide"+tempName));
+                    if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:Hide"+tempName));
                     tempView.dismissPopupWindow();
-                    LibreOfficeMainActivity.setDocumentChanged(true);
+                    if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.DOCUMENT_CHANGED));
                 }
             });
             headerPopupView.findViewById(R.id.calc_header_popup_show).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    LOKitShell.sendEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:Show"+tempName));
+                    if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:Show"+tempName));
                     tempView.dismissPopupWindow();
-                    LibreOfficeMainActivity.setDocumentChanged(true);
+                    if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.DOCUMENT_CHANGED));
                 }
             });
             headerPopupView.findViewById(R.id.calc_header_popup_optimal_length).setOnClickListener(new View.OnClickListener() {
@@ -174,7 +176,7 @@ public class CalcHeadersController {
                         view.setVisibility(View.VISIBLE);
                         popupWindow.setFocusable(true);
                         popupWindow.showAtLocation(tempView, Gravity.CENTER, 0, 0);
-                        LOKitShell.getMainHandler().post(new Runnable() {
+                        TheApplication.getMainHandler().post(new Runnable() {
                             @Override
                             public void run() {
                                 Snackbar.make(tempView, R.string.calc_alert_double_click_optimal_length, Snackbar.LENGTH_LONG).show();
@@ -189,15 +191,15 @@ public class CalcHeadersController {
                     String text = ((EditText)headerPopupView.findViewById(R.id.calc_header_popup_optimal_length_text)).getText().toString();
                     tempView.sendOptimalLengthRequest(text);
                     tempView.dismissPopupWindow();
-                    LibreOfficeMainActivity.setDocumentChanged(true);
+                    if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.DOCUMENT_CHANGED));
                 }
             });
             headerPopupView.findViewById(R.id.calc_header_popup_adjust_length).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    mContext.getDocumentOverlay().showAdjustLengthLine(tempView == mCalcRowHeadersView, tempView);
+                    mDocumentOverlay.showAdjustLengthLine(tempView == mCalcRowHeadersView, tempView);
                     tempView.dismissPopupWindow();
-                    LibreOfficeMainActivity.setDocumentChanged(true);
+                    if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.DOCUMENT_CHANGED));
                 }
             });
             ((Button)headerPopupView.findViewById(R.id.calc_header_popup_adjust_length))
@@ -220,7 +222,7 @@ public class CalcHeadersController {
     }
 
     public void showHeaders() {
-        LOKitShell.getMainHandler().post(new Runnable() {
+        TheApplication.getMainHandler().post(new Runnable() {
             @Override
             public void run() {
                 mCalcColumnHeadersView.invalidate();

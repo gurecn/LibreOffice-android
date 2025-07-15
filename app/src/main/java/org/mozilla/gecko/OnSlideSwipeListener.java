@@ -6,20 +6,20 @@ import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
-import android.util.Log;
 
-import org.libreoffice.LOKitShell;
+import org.libreoffice.callback.EventCallback;
+import org.libreoffice.data.LOEvent;
 import org.mozilla.gecko.gfx.GeckoLayerClient;
 import org.mozilla.gecko.gfx.ImmutableViewportMetrics;
 
-
 public class OnSlideSwipeListener implements OnTouchListener {
-    private static final String LOGTAG = OnSlideSwipeListener.class.getName();
 
     private final GestureDetector mGestureDetector;
     private final GeckoLayerClient mLayerClient;
+    private final EventCallback mCallback;
 
-    public OnSlideSwipeListener(Context ctx, GeckoLayerClient client){
+    public OnSlideSwipeListener(Context ctx, GeckoLayerClient client, EventCallback callback){
+        mCallback = callback;
         mGestureDetector = new GestureDetector(ctx, new GestureListener());
         mLayerClient = client;
     }
@@ -67,13 +67,11 @@ public class OnSlideSwipeListener implements OnTouchListener {
     }
 
     public void onSwipeRight() {
-        Log.d(LOGTAG, "onSwipeRight");
-        LOKitShell.sendSwipeRightEvent();
+        if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.SWIPE_RIGHT));
     }
 
     public void onSwipeLeft() {
-        Log.d(LOGTAG, "onSwipeLeft");
-        LOKitShell.sendSwipeLeftEvent();
+        if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.SWIPE_LEFT));
     }
 
     @Override

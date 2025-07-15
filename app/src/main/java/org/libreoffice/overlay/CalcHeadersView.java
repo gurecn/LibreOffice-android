@@ -13,9 +13,10 @@ import android.widget.PopupWindow;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.libreoffice.LOEvent;
-import org.libreoffice.LOKitShell;
-import org.libreoffice.LibreOfficeMainActivity;
+import org.libreoffice.application.CustomConstant;
+import org.libreoffice.application.TheApplication;
+import org.libreoffice.callback.EventCallback;
+import org.libreoffice.data.LOEvent;
 import org.libreoffice.canvas.CalcHeaderCell;
 import org.libreoffice.kit.Document;
 import org.mozilla.gecko.gfx.ImmutableViewportMetrics;
@@ -24,13 +25,14 @@ import org.mozilla.gecko.gfx.LayerView;
 import java.util.ArrayList;
 import java.util.Collections;
 
-import static org.libreoffice.SearchController.addProperty;
+import static org.libreoffice.manager.SearchController.addProperty;
 
 public class CalcHeadersView extends View {
-    private static final String LOGTAG = CalcHeadersView.class.getSimpleName();
 
     private boolean mInitialized;
     private LayerView mLayerView;
+    private EventCallback mCallback;
+
     private boolean mIsRow; // true if this is for row headers, false for column
     private ArrayList<String> mLabels;
     private ArrayList<Float> mDimens;
@@ -52,12 +54,13 @@ public class CalcHeadersView extends View {
         super(context, attrs, defStyleAttr);
     }
 
-    public void initialize(LayerView layerView, boolean isRow) {
+    public void initialize(LayerView layerView, boolean isRow, EventCallback callback) {
         if (!mInitialized) {
             mLayerView = layerView;
+            mCallback = callback;
             mIsRow = isRow;
 
-            LOKitShell.getMainHandler().post(new Runnable() {
+            TheApplication.getMainHandler().post(new Runnable() {
                 @Override
                 public void run() {
                     mDetector = new GestureDetectorCompat(getContext(), new HeaderGestureListener());
@@ -139,10 +142,10 @@ public class CalcHeadersView extends View {
             }
             if (mIsRow) {
                 addProperty(rootJson, "Row", "unsigned short", String.valueOf(index));
-                LOKitShell.sendEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:SelectRow", rootJson.toString()));
+                if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:SelectRow", rootJson.toString()));
             } else {
                 addProperty(rootJson, "Col", "unsigned short", String.valueOf(index));
-                LOKitShell.sendEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:SelectColumn", rootJson.toString()));
+                if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:SelectColumn", rootJson.toString()));
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -191,8 +194,8 @@ public class CalcHeadersView extends View {
     }
 
     public void showHeaderPopup(PointF point) {
-        if (mPopupWindow == null ||
-                !LibreOfficeMainActivity.isExperimentalMode()) return;
+        boolean isExperimentalMode = TheApplication.getSPManager().getBoolean(CustomConstant.ENABLE_EXPERIMENTAL_PREFS_KEY, false);
+        if (mPopupWindow == null || !isExperimentalMode) return;
         if (mIsRow) {
             mPopupWindow.showAsDropDown(this, getWidth()*3/2, -getHeight()+(int)point.y);
         } else {
@@ -215,14 +218,14 @@ public class CalcHeadersView extends View {
         if (mIsRow) {
             try {
                 addProperty(rootJson, "aExtraHeight", "unsigned short", text);
-                LOKitShell.sendEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:SetOptimalRowHeight", rootJson.toString()));
+                if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:SetOptimalRowHeight", rootJson.toString()));
             } catch (JSONException ex) {
                 ex.printStackTrace();
             }
         } else {
             try {
                 addProperty(rootJson, "aExtraWidth", "unsigned short", text);
-                LOKitShell.sendEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:SetOptimalColumnWidth", rootJson.toString()));
+                if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.UNO_COMMAND, ".uno:SetOptimalColumnWidth", rootJson.toString()));
             } catch (JSONException ex) {
                 ex.printStackTrace();
             }
@@ -267,9 +270,9 @@ public class CalcHeadersView extends View {
                 } catch (JSONException ex) {
                     ex.printStackTrace();
                 }
-                LOKitShell.sendEvent(new LOEvent(LOEvent.UNO_COMMAND,".uno:SetOptimalRowHeight", rootJson.toString()));
+                if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.UNO_COMMAND,".uno:SetOptimalRowHeight", rootJson.toString()));
             } else {
-                LOKitShell.sendEvent(new LOEvent(LOEvent.UNO_COMMAND,".uno:SetOptimalColumnWidthDirect"));
+                if(mCallback != null)mCallback.queueEvent(new LOEvent(LOEvent.UNO_COMMAND,".uno:SetOptimalColumnWidthDirect"));
             }
             showHeaderPopup(pointOfTouch);
             return true;

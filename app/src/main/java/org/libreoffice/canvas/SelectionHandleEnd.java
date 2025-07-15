@@ -1,15 +1,18 @@
 package org.libreoffice.canvas;
 
-import org.libreoffice.LibreOfficeMainActivity;
+import org.libreoffice.application.TheApplication;
+import org.libreoffice.callback.EventCallback;
+import org.libreoffice.ui.MainActivity;
 
 import org.libreoffice.R;
+import org.mozilla.gecko.gfx.GeckoLayerClient;
 
 /**
  * Selection handle for showing and manipulating the end of a selection.
  */
 public class SelectionHandleEnd extends SelectionHandle {
-    public SelectionHandleEnd(LibreOfficeMainActivity context) {
-        super(context, getBitmapForDrawable(context, R.drawable.handle_alias_end));
+    public SelectionHandleEnd(GeckoLayerClient layerClient, EventCallback callback) {
+        super(layerClient, callback, getBitmapForDrawable(TheApplication.getContext(), R.drawable.handle_alias_end));
     }
 
     /**

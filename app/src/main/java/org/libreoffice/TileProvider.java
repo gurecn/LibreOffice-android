@@ -4,7 +4,6 @@ package org.libreoffice;
 import android.graphics.Bitmap;
 import android.graphics.PointF;
 import android.view.KeyEvent;
-
 import org.mozilla.gecko.gfx.CairoImage;
 import org.mozilla.gecko.gfx.IntSize;
 
