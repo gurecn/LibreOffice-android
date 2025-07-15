@@ -9,9 +9,7 @@ import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
-
 import org.libreoffice.callback.EventCallback;
-import org.libreoffice.ui.MainActivity;
 import org.libreoffice.R;
 import org.libreoffice.canvas.AdjustLengthLine;
 import org.libreoffice.canvas.CalcSelectionBox;
@@ -25,7 +23,6 @@ import org.libreoffice.canvas.SelectionHandleStart;
 import org.mozilla.gecko.gfx.ImmutableViewportMetrics;
 import org.mozilla.gecko.gfx.LayerView;
 import org.mozilla.gecko.gfx.RectUtils;
-
 import java.util.ArrayList;
 import java.util.List;
 

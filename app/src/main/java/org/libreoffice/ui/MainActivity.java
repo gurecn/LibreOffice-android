@@ -47,6 +47,7 @@ import org.libreoffice.manager.FormattingController;
 import org.libreoffice.manager.LOKitTileProvider;
 import org.libreoffice.overlay.CalcHeadersController;
 import org.libreoffice.overlay.DocumentOverlay;
+import org.libreoffice.overlay.DocumentOverlayView;
 import org.libreoffice.utils.FileUtilities;
 import org.libreoffice.utils.ThumbnailCreator;
 import org.mozilla.gecko.ZoomConstraints;
@@ -221,11 +222,11 @@ public class MainActivity extends AppCompatActivity implements SettingsListenerM
         ZoomCallback callback = new ZoomCallback() {
             @Override
             public void hideSoftKeyboard() {
-                getDocumentOverlay().hidePageNumberRect();
+                mDocumentOverlay.hidePageNumberRect();
             }
             @Override
             public void showPageNumberRect() {
-                getDocumentOverlay().showPageNumberRect();
+                mDocumentOverlay.showPageNumberRect();
             }
             @Override
             public void hidePageNumberRect() {
@@ -242,7 +243,9 @@ public class MainActivity extends AppCompatActivity implements SettingsListenerM
             return false;
         });
         // create TextCursorLayer
-        mDocumentOverlay = new DocumentOverlay(this, layerView, this);
+
+        DocumentOverlayView documentOverlayView = findViewById(R.id.text_cursor_view);
+        mDocumentOverlay = new DocumentOverlay(documentOverlayView, layerView, this);
         mbISReadOnlyMode = !isExperimentalMode();
         final Uri docUri = getIntent().getData();
         if (docUri != null) {
@@ -1113,7 +1116,7 @@ public class MainActivity extends AppCompatActivity implements SettingsListenerM
         }
         String partPageRectString = ((LOKitTileProvider) mTileProvider).getPartPageRectangles();
         List<RectF> partPageRectangles = mInvalidationHandler.convertPayloadToRectangles(partPageRectString);
-        this.getDocumentOverlay().setPartPageRectangles(partPageRectangles);
+        mDocumentOverlay.setPartPageRectangles(partPageRectangles);
     }
 
     private void updatePageSize(int pageWidth, int pageHeight){

@@ -1,12 +1,8 @@
 package org.libreoffice.overlay;
 
 import android.graphics.RectF;
-import android.util.Log;
-
 import org.libreoffice.application.TheApplication;
 import org.libreoffice.callback.EventCallback;
-import org.libreoffice.ui.MainActivity;
-import org.libreoffice.R;
 import org.libreoffice.canvas.SelectionHandle;
 import org.mozilla.gecko.gfx.Layer;
 import org.mozilla.gecko.gfx.LayerView;
@@ -22,7 +18,6 @@ public class DocumentOverlay {
     private static final String LOGTAG = DocumentOverlay.class.getSimpleName();
 
     private final DocumentOverlayView mDocumentOverlayView;
-    private final DocumentOverlayLayer mDocumentOverlayLayer;
 
     private final long hidePageNumberRectDelayInMilliseconds = 500;
 
@@ -58,13 +53,9 @@ public class DocumentOverlay {
         }
     }
 
-    public DocumentOverlay(MainActivity context, LayerView layerView, EventCallback callback) {
-        mDocumentOverlayView = context.findViewById(R.id.text_cursor_view);
-        mDocumentOverlayLayer = new DocumentOverlayLayer();
-        if (mDocumentOverlayView == null) {
-            Log.e(LOGTAG, "Failed to initialize TextCursorLayer - CursorView is null");
-        }
-        layerView.addLayer(mDocumentOverlayLayer);
+    public DocumentOverlay(DocumentOverlayView documentOverlayView, LayerView layerView, EventCallback callback) {
+        mDocumentOverlayView = documentOverlayView;
+        layerView.addLayer(new DocumentOverlayLayer());
         mDocumentOverlayView.initialize(layerView, callback);
     }
 

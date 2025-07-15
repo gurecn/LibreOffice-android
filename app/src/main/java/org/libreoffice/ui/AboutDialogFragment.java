@@ -3,7 +3,6 @@ package org.libreoffice.ui;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.content.ComponentName;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -16,7 +15,6 @@ import android.text.Spanned;
 import android.text.method.LinkMovementMethod;
 import android.view.View;
 import android.widget.TextView;
-
 import org.libreoffice.BuildConfig;
 import org.libreoffice.R;
 
@@ -53,18 +51,14 @@ public class AboutDialogFragment extends DialogFragment {
                 .setNegativeButton(R.string.about_license, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int id) {
-                        loadFromAbout(R.raw.license);
+                        loadFromAbout();
                         dialog.dismiss();
                     }
                 });
         return builder.create();
     }
 
-    private void loadFromAbout(int resourceId) {
-        Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("android.resource://" + BuildConfig.APPLICATION_ID + "/" + resourceId));
-        String packageName = getActivity().getApplicationContext().getPackageName();
-        ComponentName componentName = new ComponentName(packageName, MainActivity.class.getName());
-        i.setComponent(componentName);
-        getActivity().startActivity(i);
+    private void loadFromAbout() {
+        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.gnu.org/licenses/gpl-3.0.html")));
     }
 }

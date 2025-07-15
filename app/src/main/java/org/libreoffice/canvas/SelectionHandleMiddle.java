@@ -2,8 +2,6 @@ package org.libreoffice.canvas;
 
 import org.libreoffice.application.TheApplication;
 import org.libreoffice.callback.EventCallback;
-import org.libreoffice.ui.MainActivity;
-
 import org.libreoffice.R;
 import org.mozilla.gecko.gfx.GeckoLayerClient;
 
